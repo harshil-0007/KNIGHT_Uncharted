@@ -15,7 +15,8 @@ const SEVERITIES = new Set(['critical', 'high', 'medium', 'low']);
 app.disable('x-powered-by');
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
-app.use('/api/local', localRoutes);
+// Reads folders from the machine's own disk, so it is local-only: never mount it on a hosted server.
+if (process.env.NODE_ENV !== 'production') app.use('/api/local', localRoutes);
 
 function fail(res, status, error, message) {
   return res.status(status).json({ error, message });
@@ -300,7 +301,7 @@ function inspectFiles(files) {
     const ext = path.extname(bad) || 'this type';
     return {
       error: 'invalid_configuration',
-      message: `RippleGuard cannot read ${ext} files (${bad}). Use source files such as .py, .js, .ts, or .env.`
+      message: `DBug cannot read ${ext} files (${bad}). Use source files such as .py, .js, .ts, or .env.`
     };
   }
   return { paths };
@@ -326,7 +327,7 @@ function inspectDiff(diff) {
     const ext = path.extname(bad) || 'this type';
     return {
       error: 'invalid_configuration',
-      message: `RippleGuard cannot read ${ext} files (${bad}). Point the change at source files it can parse.`
+      message: `DBug cannot read ${ext} files (${bad}). Point the change at source files it can parse.`
     };
   }
   return { files };
@@ -344,5 +345,5 @@ try {
 }
 
 app.listen(PORT, () => {
-  console.log(`RippleGuard at http://localhost:${PORT}`);
+  console.log(`DBug at http://localhost:${PORT}`);
 });

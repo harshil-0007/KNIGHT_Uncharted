@@ -1,4 +1,4 @@
-// Lets RippleGuard read a real project folder and its real `git diff`.
+// Lets DBug read a real project folder and its real `git diff`.
 // Only works for requests coming from this same machine.
 import { Router } from 'express';
 import fs from 'node:fs/promises';

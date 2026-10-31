@@ -1,4 +1,4 @@
-# RippleGuard
+# DBug
 
 Scan a Python or JavaScript project for exposed keys and risky code, then keep each scan as a run in MongoDB.
 

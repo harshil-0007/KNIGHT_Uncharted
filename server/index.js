@@ -211,8 +211,8 @@ app.post('/api/runs', requireMongo, async (req, res) => {
 
   const prepared = [];
   for (const raw of findingsIn) {
-    const severity = String(raw.severity || '').toLowerCase();
-    const fingerprint = hashFingerprint(raw.fp || raw.fingerprint || '');
+    const severity = String(raw.severity || raw.sev || '').toLowerCase();
+    const fingerprint = hashFingerprint(String(raw.fp || raw.fingerprint || [raw.name, raw.path, raw.line].join(':')));
     const pathName = String(raw.path || raw.details?.path || '');
     const line = Number(raw.line || raw.details?.line || 0);
     if (!SEVERITIES.has(severity) || fingerprint.length < 8) {

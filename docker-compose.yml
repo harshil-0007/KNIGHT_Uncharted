@@ -1,0 +1,16 @@
+# Optional local MongoDB replica set (change streams work, same as Atlas).
+# docker compose up -d
+# Then in .env: MONGODB_URI=mongodb://127.0.0.1:27017/rippleguard
+services:
+  mongo:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: >
+        mongosh --quiet --eval
+        "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'127.0.0.1:27017'}]}).ok }"
+      interval: 5s
+      timeout: 10s
+      retries: 12

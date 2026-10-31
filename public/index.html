@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RippleGuard</title>
+<style>
+:root{--bg:#f0f4f8;--sf:#fff;--sf2:#e7edf3;--ln:#d1dbe5;--fg:#0b1a26;--mu:#4f6577;--ac:#0a62c4;--acf:#fff;--crit:#c01f3b;--high:#b85208;--med:#876600;--low:#4a6781;--ok:#12794a;--mono:ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#08121b;--sf:#0e1a25;--sf2:#152635;--ln:#223a4d;--fg:#e3edf4;--mu:#8aa3b6;--ac:#4ab2ff;--acf:#031019;--crit:#ff6a80;--high:#ff9a52;--med:#ecc352;--low:#92abc0;--ok:#4fd18c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#08121b;--sf:#0e1a25;--sf2:#152635;--ln:#223a4d;--fg:#e3edf4;--mu:#8aa3b6;--ac:#4ab2ff;--acf:#031019;--crit:#ff6a80;--high:#ff9a52;--med:#ecc352;--low:#92abc0;--ok:#4fd18c;color-scheme:dark}
+*{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,"Segoe UI",sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--bg);border-bottom:1px solid var(--ln)}
+header .wrap{display:flex;align-items:center;gap:12px;min-height:54px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:18px;margin-right:auto}
+nav{display:flex;gap:4px;overflow-x:auto}
+nav a{padding:7px 12px;border-radius:8px;color:var(--mu);text-decoration:none;font-weight:600;font-size:14px;white-space:nowrap}
+nav a.on{background:var(--ac);color:var(--acf)}
+h2{margin:22px 0 4px;font-size:1.5rem}
+p{margin:0}.mu{color:var(--mu)}
+.panel{background:var(--sf);border:1px solid var(--ln);border-radius:12px;padding:16px;margin-top:14px;min-width:0}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.btn{font:600 13px system-ui;padding:9px 13px;border-radius:8px;border:1px solid var(--ln);background:var(--sf);color:var(--fg);cursor:pointer}
+.btn.p{background:var(--ac);color:var(--acf);border-color:var(--ac)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+textarea,select,input[type=text]{width:100%;font:13px/1.5 var(--mono);color:var(--fg);background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:9px}
+select,input[type=text]{font-family:system-ui;font-size:14px}
+.sc{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px}
+th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);padding:0 8px 8px}
+td{padding:9px 8px;border-top:1px solid var(--ln);vertical-align:top}
+.m{font-family:var(--mono);font-size:12px;word-break:break-all;color:var(--mu)}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap;border:1px solid currentColor}
+.critical{color:var(--crit)}.high{color:var(--high)}.medium{color:var(--med)}.low{color:var(--low)}
+.kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-top:14px}
+.kpis div{background:var(--sf);border:1px solid var(--ln);border-radius:12px;padding:12px}
+.kpis b{display:block;font-size:1.8rem;line-height:1.1}
+.layers{display:flex;gap:12px;overflow-x:auto;align-items:flex-start;padding-bottom:6px}
+.layer{min-width:200px;flex:1;display:grid;gap:8px}
+.layer h4{margin:0;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+.fn{background:var(--sf2);border:1px solid var(--ln);border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer}
+.fn.src{background:var(--ac);color:var(--acf);border-color:var(--ac)}
+.fn.t{border-style:dashed}
+.fn .m{color:inherit;opacity:.75}
+.verdict{border:1px solid;border-radius:12px;padding:14px;font-size:1.2rem;font-weight:700}
+.verdict span{font-size:14px;font-weight:400;margin-left:8px;color:var(--fg)}
+.block{color:var(--crit)}.warn{color:var(--high)}.pass{color:var(--ok)}
+a{color:var(--ac)}
+.notice{border:1px solid var(--ln);border-left:4px solid var(--ac);padding:12px 14px;border-radius:8px;margin-top:12px;background:var(--sf)}
+.notice.bad{border-left-color:var(--crit)}
+.notice.ok{border-left-color:var(--ok)}
+.toast{position:fixed;bottom:16px;right:16px;background:var(--sf);border:1px solid var(--ln);padding:12px 14px;border-radius:10px;z-index:20;max-width:380px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--mu);display:inline-block}
+.dot.on{background:var(--ok)}
+label.field{display:block;font-size:12px;color:var(--mu);margin-bottom:4px}
+</style>
+</head>
+<body>
+<header><div class="wrap"><span class="brand">RippleGuard</span><nav id="nav"></nav><button class="btn" id="th" type="button">Theme</button></div></header>
+<main class="wrap" id="v"></main>
+<div id="toast" hidden class="toast"></div>
+<script>
+const SEV={critical:4,high:3,medium:2,low:1};
+const READABLE=/\.(py|js|ts|tsx|jsx|mjs|cjs|json|env|ya?ml|toml|md|txt|html|css|go|rb|java|rs)$/i;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const KEYS=[
+ ['Stripe live secret key','critical',/\bsk_live_[0-9a-zA-Z]{24,}\b/g,0,'Roll the key in the Stripe dashboard, then load the new one from an environment variable.'],
+ ['AWS access key ID','critical',/\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g,0,'Deactivate it in IAM, create a new key, and read it from the environment.'],
+ ['Database URL with password','critical',/\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis):\/\/[^\s:@\/'"]+:([^\s@\/'"]{4,})@[^\s'"]+/g,1,'Change the database password and keep the URL in an environment variable.'],
+ ['Private key block','critical',/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g,0,'Generate a new key pair and remove the old public key everywhere.'],
+ ['GitHub token','high',/\bgh[pousr]_[A-Za-z0-9]{36}\b/g,0,'Delete the token in GitHub settings and create one with fewer permissions.'],
+ ['Slack token','high',/\bxox[baprs]-[A-Za-z0-9-]{10,48}\b/g,0,'Revoke it in the Slack app settings and install again.'],
+ ['SendGrid API key','high',/\bSG\.[A-Za-zA-Z0-9_-]{22}\.[A-Za-zA-Z0-9_-]{43}\b/g,0,'Delete it in SendGrid and create a replacement.'],
+ ['Google API key','medium',/\bAIza[0-9A-Za-z_-]{35}\b/g,0,'Regenerate it and restrict it by referrer or IP.']
+];
+const GENERIC=/\b([A-Za-z_]\w*(?:secret|token|passw(?:or)?d|api[_-]?key)\w*)\s*[:=]\s*["']([^"'\s]{12,})["']/gi;
+function entropy(s){const f={};for(const c of s)f[c]=(f[c]||0)+1;return -Object.values(f).reduce((a,n)=>a+n/s.length*Math.log2(n/s.length),0)}
+const mask=v=>v.length>10?v.slice(0,4)+'••••'+v.slice(-3):v.slice(0,2)+'••••';
+
+const RULES=[
+ ['Runs dynamic code (eval/exec)','high',/\b(?:eval|exec)\s*\(/,'Never run text from users. Use a parser or a lookup table.'],
+ ['SQL built from strings','high',/\b(?:execute|query)\s*\(\s*(?:f["']|["'][^"']*["']\s*(?:%|\+))/,'Use placeholders and pass values separately.'],
+ ['HTTPS check turned off','high',/verify\s*=\s*False|rejectUnauthorized\s*:\s*false/,'Remove it. Trust the real certificate instead.'],
+ ['Unsafe pickle or YAML load','high',/pickle\.loads?\s*\(|yaml\.load\s*\((?![^)]*Loader)/,'Use json or yaml.safe_load.'],
+ ['Shell command with shell=True','high',/shell\s*=\s*True/,'Pass a list of arguments and drop shell=True.'],
+ ['Debug mode on','medium',/\bdebug\s*=\s*True\b/,'Read it from the environment and keep it off in production.'],
+ ['Weak hash (MD5 or SHA-1)','medium',/hashlib\.(?:md5|sha1)\b|\b(?:md5|sha1)\s*\(/i,'Use bcrypt, scrypt or argon2 for passwords, SHA-256 for checksums.'],
+ ['CORS allows every origin','medium',/origin\s*:\s*["']\*["']|Allow-Origin["'],?\s*["']\*/i,'List the exact origins that need access.'],
+ ['Raw HTML insertion (XSS risk)','medium',/\.innerHTML\s*=|dangerouslySetInnerHTML/,'Use textContent, or sanitise the HTML first.']
+];
+function scanLine(text,path,line){
+ const out=[];
+ for(const [name,sev,re,g,fix] of KEYS){
+  for(const m of text.matchAll(re)){const v=g?m[g]:m[0];out.push({kind:'key',name,sev,path,line,shown:mask(v),fix,fp:name+v})}
+ }
+ if(!out.length&&!/os\.environ|process\.env|getenv/.test(text)){
+  for(const m of text.matchAll(GENERIC)){
+   if(entropy(m[2])<3||/^(password|changeme|example|your[_-].*)$/i.test(m[2]))continue;
+   out.push({kind:'key',name:'Hard-coded credential: '+m[1],sev:'high',path,line,shown:mask(m[2]),fix:'Move the value to an environment variable and rotate it.',fp:m[2]});
+  }
+ }
+ for(const [name,sev,re,fix] of RULES) if(re.test(text)) out.push({kind:'issue',name,sev,path,line,shown:text.trim().slice(0,70),fix,fp:name+path+line});
+ return out;
+}
+
+function parseFns(path,text){
+ const L=text.split('\n'),out=[],py=/\.py$/.test(path);
+ L.forEach((l,i)=>{
+  if(py){
+   const m=l.match(/^(\s*)(?:async\s+)?def\s+(\w+)\s*\(/);if(!m)return;
+   let e=i;for(let j=i+1;j<L.length;j++){if(!L[j].trim()||/^\s*#/.test(L[j]))continue;if(L[j].match(/^\s*/)[0].length<=m[1].length)break;e=j}
+   out.push({path,name:m[2],start:i+1,end:e+1});
+  }else{
+   const m=l.match(/^\s*(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\(/)||l.match(/^\s*(?:export\s+)?(?:const|let)\s+(\w+)\s*=\s*(?:async\s*)?(?:function\b|\([^)]*\)\s*=>|\w+\s*=>)/);
+   if(!m)return;
+   let d=0,seen=false,e=i;
+   for(let j=i;j<L.length;j++){for(const c of L[j]){if(c==='{'){d++;seen=true}else if(c==='}')d--}e=j;if(seen&&d<=0)break;if(!seen&&j>i+1&&!/=>\s*$/.test(L[j-1]))break}
+   out.push({path,name:m[1],start:i+1,end:e+1});
+  }
+ });
+ return out;
+}
+const isTest=p=>/(^|\/)(tests?|__tests__)\/|(^|\/)test_|\.(test|spec)\.|_test\./.test(p);
+
+function analyze(files){
+ const fns=[],findings=[],lines={};
+ for(const [p,t] of Object.entries(files)){
+  lines[p]=t.split('\n');
+  fns.push(...parseFns(p,t));
+  lines[p].forEach((l,i)=>findings.push(...scanLine(l,p,i+1)));
+ }
+ fns.forEach(f=>{f.id=f.path+'::'+f.name;f.callers=[];f.test=isTest(f.path)});
+ const byId=new Map(fns.map(f=>[f.id,f]));
+ for(const f of fns){
+  const body=lines[f.path].slice(f.start,f.end).join('\n');
+  for(const g of fns){
+   if(g===f||g.name===f.name)continue;
+   if(new RegExp('\\b'+g.name+'\\s*\\(').test(body)&&!g.callers.includes(f))g.callers.push(f);
+  }
+ }
+ const inner=(p,ln)=>fns.filter(f=>f.path===p&&ln>=f.start&&ln<=f.end).sort((a,b)=>(a.end-a.start)-(b.end-a.start))[0];
+ findings.forEach(x=>{const f=inner(x.path,x.line);x.fn=f?f.id:null});
+ const seen=new Set();
+ const uniq=findings.filter(x=>{
+  if(x.kind!=='key')return true;
+  if(seen.has(x.fp))return false;
+  seen.add(x.fp);
+  return true;
+ });
+ uniq.sort((a,b)=>SEV[b.sev]-SEV[a.sev]);
+ return {files,fns,byId,findings:uniq,inner};
+}
+function impact(M,ids){
+ const hops=new Map();let fr=[...ids],h=0;const seen=new Set(ids);
+ while(fr.length){h++;const nx=[];for(const id of fr)for(const c of M.byId.get(id).callers)if(!seen.has(c.id)){seen.add(c.id);hops.set(c.id,h);nx.push(c.id)}fr=nx}
+ return hops;
+}
+const covered=(M,id,hops)=>M.byId.get(id).test||[...hops.keys()].some(k=>M.byId.get(k).test);
+
+function diffFileNames(text){
+ const files=[];
+ for(const l of text.split('\n')){
+  const m=l.match(/^\+\+\+ (?:b\/)?(.+)$/);
+  if(m&&m[1]!=='/dev/null')files.push(m[1].trim());
+ }
+ return files;
+}
+function readablePath(p){
+ const base=p.split(/[/\\]/).pop();
+ return READABLE.test(p)||/^\.env(?:\..+)?$/.test(base);
+}
+function inspectFiles(files){
+ const paths=Object.keys(files||{});
+ if(!paths.length)return {error:'incomplete_input',message:'No files to scan. Paste code with ### path/file.py lines, or choose files.'};
+ const bad=paths.find(p=>!readablePath(p));
+ if(bad){
+  const ext=(bad.match(/\.[^.]+$/)||['this type'])[0];
+  return {error:'invalid_configuration',message:`RippleGuard cannot read ${ext} files (${bad}). Use source files such as .py, .js, .ts, or .env.`};
+ }
+ return {ok:true};
+}
+function inspectDiff(text){
+ if(!String(text).trim())return {error:'incomplete_input',message:'Paste a git diff before checking a change.'};
+ const files=diffFileNames(text);
+ if(!files.length)return {error:'incomplete_input',message:'This diff has no file names. Use git diff output that includes lines like +++ b/path/to/file.py.'};
+ const bad=files.find(p=>!readablePath(p));
+ if(bad){
+  const ext=(bad.match(/\.[^.]+$/)||['this type'])[0];
+  return {error:'invalid_configuration',message:`RippleGuard cannot read ${ext} files (${bad}). Point the change at source files it can parse.`};
+ }
+ return {ok:true,files};
+}
+
+function applyUnifiedDiff(files,text){
+ const next=Object.fromEntries(Object.entries(files).map(([p,t])=>[p,t.split('\n')]));
+ const rows=text.split('\n');
+ let file=null,i=0;
+ while(i<rows.length){
+  const l=rows[i];
+  if(l.startsWith('+++ ')){
+   const m=l.match(/^\+\+\+ (?:b\/)?(.+)$/);
+   file=m&&m[1]!=='/dev/null'?m[1].trim():null;
+   if(file&&!next[file])next[file]=[''];
+   i++;continue;
+  }
+  const h=l.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+  if(h&&file){
+   const oldStart=+h[1],oldCount=h[2]===undefined?1:+h[2];
+   const remove=[],add=[];
+   i++;
+   while(i<rows.length){
+    const row=rows[i];
+    if(/^@@ |^diff |^\+\+\+ |^--- /.test(row))break;
+    if(row.startsWith('\\')){i++;continue}
+    if(row.startsWith('+'))add.push(row.slice(1));
+    else if(row.startsWith('-'))remove.push(row.slice(1));
+    else {const body=row.startsWith(' ')?row.slice(1):row;add.push(body);remove.push(body)}
+    i++;
+   }
+   const arr=next[file];
+   const at=oldCount===0?oldStart:oldStart-1;
+   arr.splice(at,remove.length||oldCount,...add);
+   continue;
+  }
+  i++;
+ }
+ const out={};
+ for(const [p,arr] of Object.entries(next)){
+  let s=arr.join('\n');
+  if(!s.endsWith('\n'))s+='\n';
+  out[p]=s;
+ }
+ return out;
+}
+
+function checkDiff(M,text){
+ let file=null,ln=0;const added=[],touched=new Map();
+ const mark=(f,n)=>{if(!touched.has(f))touched.set(f,new Set());touched.get(f).add(n)};
+ for(const l of text.split('\n')){
+  if(l.startsWith('+++ ')){const m=l.match(/^\+\+\+ (?:b\/)?(.+)$/);file=m&&m[1]!=='/dev/null'?m[1].trim():null;continue}
+  if(/^(--- |diff |index |new file|deleted file)/.test(l))continue;
+  const h=l.match(/^@@ -\d+(?:,\d+)? \+(\d+)/);if(h){ln=+h[1]-1;continue}
+  if(!file)continue;
+  if(l.startsWith('+')){ln++;added.push({file,line:ln,text:l.slice(1)});mark(file,ln)}
+  else if(l.startsWith('-'))mark(file,Math.max(1,ln+1));
+  else ln++;
+ }
+ const finds=added.flatMap(a=>scanLine(a.text,a.file,a.line)).sort((a,b)=>SEV[b.sev]-SEV[a.sev]);
+ const changed=new Set();
+ for(const [f,set] of touched)for(const n of set){const fn=M.files[f]!==undefined?M.inner(f,n):null;if(fn)changed.add(fn.id)}
+ const ids=[...changed],hops=impact(M,ids);
+ const rows=ids.map(id=>{const own=impact(M,[id]);return {id,size:own.size,tested:covered(M,id,own)}});
+ let verdict='pass';
+ if(finds.length||rows.some(r=>!r.tested)||hops.size>=5)verdict='warn';
+ if(finds.some(f=>SEV[f.sev]>=3))verdict='block';
+ const applied=added.length>0&&added.filter(a=>((M.files[a.file]||'').split('\n')[a.line-1]||'').trimEnd()===a.text.trimEnd()).length/added.length>=0.8;
+ return {finds,ids,hops,rows,verdict,files:[...touched.keys()],applied};
+}
+
+
+const LS=(()=>{try{return JSON.parse(localStorage.getItem('rg')||'{}')}catch{return{}}})();
+const S={src:'',M:null,fn:null,diff:'',projectId:LS.projectId||'',dir:LS.dir||'',git:null,health:null,history:null,compare:null,live:false};
+const keep=()=>{try{localStorage.setItem('rg',JSON.stringify({projectId:S.projectId,dir:S.dir}))}catch{}};
+
+const toSrc=f=>Object.entries(f).map(([p,t])=>'### '+p+'\n'+t.replace(/\n$/,'')).join('\n\n');
+function fromSrc(s){const f={};let cur=null;for(const l of s.split('\n')){const m=l.match(/^### (\S.*)$/);if(m){cur=m[1].trim();f[cur]=[];}else if(cur)f[cur].push(l)}
+ for(const k in f)f[k]=f[k].join('\n').replace(/\n+$/,'')+'\n';return f}
+function scan(){S.M=analyze(fromSrc(S.src));if(!S.M.byId.has(S.fn))S.fn=null}
+const pill=s=>`<span class="pill ${s}">${s[0].toUpperCase()+s.slice(1)}</span>`;
+const fnName=(id)=>id?`<a href="#impact" data-fn="${esc(id)}">${esc(id.split('::')[1])}()</a>`:'<span class="mu">top level</span>';
+function table(list){
+ return list.length?`<div class="sc"><table><thead><tr><th>Severity</th><th>Problem</th><th>Where</th><th>Fix</th></tr></thead><tbody>${list.map(f=>`<tr><td>${pill(f.sev||f.severity)}</td><td><b>${esc(f.name||f.details?.name||'')}</b><div class="m">${esc(f.shown||f.details?.shown||'')}</div></td><td class="m">${esc(f.path||f.details?.path||'')}:${f.line||f.details?.line||''}<br>${fnName(f.fn||f.details?.fn)}</td><td>${esc(f.fix||f.details?.fix||'')}</td></tr>`).join('')}</tbody></table></div>`:'<p class="mu">Nothing found.</p>';
+}
+
+function toast(msg){
+ const el=$('#toast');el.hidden=false;el.textContent=msg;clearTimeout(toast.t);toast.t=setTimeout(()=>{el.hidden=true},4200);
+}
+async function api(path,opts){
+ const res=await fetch(path,{headers:{'Content-Type':'application/json'},...opts});
+ const data=await res.json().catch(()=>({}));
+ if(!res.ok){const err=new Error(data.message||res.statusText);err.payload=data;err.status=res.status;throw err}
+ return data;
+}
+async function refreshHealth(){
+ try{S.health=await api('/api/health')}catch{S.health={connected:false,configured:false}}
+}
+async function saveRun({kind,label,verdict,findings,files,diff}){
+ const data=await api('/api/runs',{method:'POST',body:JSON.stringify({
+  projectId:S.projectId,kind,label,verdict,findings,files,diff
+ })});
+ toast(data.duplicate?data.message:`Saved “${label}”. Open History — it updates live.`);
+ return data;
+}
+
+const PAGES={
+ code(){return `<h2>Code to scan</h2><p class="mu">Point RippleGuard at a real project folder on this computer. It reads the source files, finds exposed keys and risky code, and saves a run to MongoDB. You can also paste code with <code>### path/file.py</code> lines, or choose a folder in the browser.</p>
+  <div class="panel"><label class="field" for="dir">Project folder (full path)</label><input id="dir" type="text" placeholder="Full path to your project folder" value="${esc(S.dir)}">
+  <label class="field" for="pid" style="margin-top:10px">Project id</label><input id="pid" type="text" placeholder="Defaults to the folder name" value="${esc(S.projectId)}">
+  <div class="row" style="margin-top:10px"><button class="btn p" data-a="scandir">Scan folder</button><label class="btn" for="fi">Choose folder in browser</label><input id="fi" type="file" webkitdirectory multiple hidden><button class="btn" data-a="scan">Scan loaded code</button></div>
+  <textarea id="src" rows="14" spellcheck="false" placeholder="Or paste code here. Start each file with ### path/file.py" style="margin-top:10px">${esc(S.src.length>100000?'':S.src)}</textarea>
+  <div id="cerr"></div></div>`},
+ findings(){const M=S.M;if(!Object.keys(M.files).length)return '<h2>Findings</h2><div class="notice">Nothing scanned yet. Go to <a href="#code">Code</a> and scan a project folder.</div>';const k=M.findings.filter(f=>f.kind==='key'),i=M.findings.filter(f=>f.kind==='issue');
+  return `<h2>Findings</h2><p class="mu">${M.fns.length} functions in ${Object.keys(M.files).length} files were read.</p>
+  <div class="kpis"><div><b>${k.length}</b><span class="mu">exposed keys</span></div><div><b>${i.length}</b><span class="mu">security issues</span></div><div><b>${M.findings.filter(f=>SEV[f.sev]>=3).length}</b><span class="mu">critical or high</span></div></div>
+  <div class="panel"><b>Exposed keys and passwords</b><div style="margin-top:10px">${table(k)}</div></div>
+  <div class="panel"><b>Other security concerns</b><div style="margin-top:10px">${table(i)}</div></div>`},
+ impact(){const M=S.M;if(!S.fn)S.fn=(M.fns.find(f=>f.name==='charge')||M.fns[0]||{}).id||null;
+  if(!S.fn)return '<h2>Change impact</h2><div class="panel mu">No functions found. Add Python or JavaScript code.</div>';
+  const hops=impact(M,[S.fn]),f=M.byId.get(S.fn),by={};
+  hops.forEach((h,id)=>(by[h]=by[h]||[]).push(id));
+  const card=(id,c)=>{const g=M.byId.get(id);return `<div class="fn ${c||''} ${g.test?'t':''}" data-fn="${esc(id)}"><b>${esc(g.name)}()</b>${g.test?' (test)':''}<div class="m">${esc(g.path)}:${g.start}</div></div>`};
+  const cols=Object.keys(by).sort((a,b)=>a-b).map(h=>`<div class="layer"><h4>${h===1?'Calls it directly':'Calls it through '+(h-1)+' other'}</h4>${by[h].map(id=>card(id)).join('')}</div>`).join('');
+  const ok=covered(M,S.fn,hops);
+  return `<h2>Change impact</h2><p class="mu">Pick a function. Everything that calls it, directly or through other functions, would be affected if it changed.</p>
+  <div class="panel"><label class="mu" for="fs">Function</label><select id="fs">${M.fns.filter(x=>!x.test).map(x=>`<option value="${esc(x.id)}"${x.id===S.fn?' selected':''}>${esc(x.name)}() in ${esc(x.path)}</option>`).join('')}</select>
+  <div class="row" style="margin:12px 0"><b>${hops.size} ${hops.size===1?'function':'functions'} affected</b>${ok?'<span class="pill pass">Covered by a test</span>':'<span class="pill high">No test reaches it</span>'}</div>
+  <div class="layers"><div class="layer"><h4>Changed</h4>${card(S.fn,'src')}</div>${cols||'<div class="layer"><h4>Nothing calls it</h4></div>'}</div></div>`},
+ diff(){return `<h2>Check a change</h2><p class="mu">RippleGuard reads your real <code>git diff</code>, finds which functions the change touched, what depends on them, and any new secret or risky line. Each saved check becomes a run in History.</p>
+  <div class="grid"><div class="panel"><div class="row" style="margin-bottom:10px"><button class="btn p" data-a="gitdiff">Load my uncommitted changes</button><button class="btn" data-a="gitlast">Load last commit</button><button class="btn" data-a="save-diff">Save this check</button></div>
+  <textarea id="df" rows="16" spellcheck="false" placeholder="Click a button above, or paste the output of git diff here">${esc(S.diff)}</textarea></div><div id="dout"></div></div>`},
+ history(){
+  const h=S.health||{};
+  const live=h.connected&&(S.live||h.changeStreams);
+  const runs=S.history?.runs||[];
+  const c=S.compare;
+  const cmp=c?.enough
+   ? `<div class="notice ${c.returnedCount?'bad':'ok'}"><b>${c.newCount} new</b>, <b>${c.fixedCount} fixed</b>, <b>${c.returnedCount} came back</b>
+      <div class="mu" style="margin-top:6px">Latest “${esc(c.latest.label||c.latest.commit)}” vs previous “${esc(c.previous.label||c.previous.commit)}”. A finding that was gone and then reappears is treated as a return, not as brand new.</div></div>`
+   : `<div class="notice">${esc(c?.message||'Scan once, then check a change, to compare two runs.')}</div>`;
+  return `<h2>History</h2><p class="mu">Each scan is a run in MongoDB. This page listens for new runs over a change stream so step 3 can stay on screen and still update.</p>
+  <div class="row" style="margin-top:10px"><span class="dot ${live?'on':''}"></span><span class="mu">${h.connected? (S.live?'Live — waiting for new runs': (h.changeStreams?'Connecting…':'Connected. Polling for new runs.')) : 'MongoDB is not connected. Add MONGODB_URI and restart.'}</span></div>
+  ${cmp}
+  <div class="panel"><b>Runs</b>${runs.length?`<div class="sc" style="margin-top:10px"><table><thead><tr><th>When</th><th>Label</th><th>Version</th><th>Result</th><th>Findings</th></tr></thead><tbody>${runs.map(r=>{
+    const when=r.createdAt?new Date(r.createdAt).toLocaleString():'';
+    const sum=r.summary||{};
+    return `<tr><td>${esc(when)}</td><td>${esc(r.label||r.kind)}</td><td class="m">${esc(r.commit)}</td><td>${r.verdict?pill(r.verdict==='pass'?'low':r.verdict==='block'?'critical':'high')+' '+esc(r.verdict):'—'}</td><td>${(sum.keys||0)+(sum.issues||0)}</td></tr>`;
+  }).join('')}</tbody></table></div>`:'<p class="mu" style="margin-top:8px">No runs yet.</p>'}</div>`;
+ }
+};
+function runDiff(){
+ const box=$('#dout');if(!box)return;
+ if(!S.diff.trim()){box.innerHTML='<div class="notice" style="margin-top:0">Load your git changes or paste a diff to see what they affect.</div>';return}
+ if(!Object.keys(S.M.files).length){box.innerHTML='<div class="notice bad" style="margin-top:0"><b>Scan first</b><div>Scan your project on the Code tab so changes can be mapped to functions.</div></div>';return}
+ const problem=inspectDiff(S.diff);
+ if(problem.error){
+  box.innerHTML=`<div class="notice bad" style="margin-top:0"><b>${problem.error==='invalid_configuration'?'Invalid configuration':'Incomplete input'}</b><div>${esc(problem.message)}</div></div>`;
+  return;
+ }
+ const r=checkDiff(S.M,S.diff),M=S.M;
+ const txt={block:['Blocked','A key or a high-risk line was added.'],warn:['Review needed','Check the affected functions below.'],pass:['Clear','Nothing risky, and the change stays local.']}[r.verdict];
+ box.innerHTML=`<div class="verdict panel ${r.verdict}" style="margin-top:0">${txt[0]}<span>${txt[1]}</span></div>
+ <div class="panel"><b>Functions changed</b>${r.rows.length?r.rows.map(x=>`<div style="margin-top:8px">${fnName(x.id)} <span class="mu">affects ${x.size} ${x.size===1?'function':'functions'}</span> ${x.tested?'':'<span class="pill high">no test</span>'}</div>`).join(''):'<p class="mu" style="margin-top:6px">No known function was touched.</p>'}
+ ${r.hops.size?`<p class="mu" style="margin-top:12px">Also affected: ${[...r.hops].sort((a,b)=>a[1]-b[1]).map(([id,h])=>`<span class="m">${esc(id.split('::')[1])}() (${h})</span>`).join(', ')}</p>`:''}</div>
+ ${r.finds.length?`<div class="panel"><b>Problems on added lines</b><div style="margin-top:10px">${table(r.finds)}</div></div>`:''}`;
+}
+async function persistDiff(label){
+ const problem=inspectDiff(S.diff);
+ if(problem.error){toast(problem.message);runDiff();return}
+ const r=checkDiff(S.M,S.diff);
+ const snapshot=r.applied?S.M:analyze(applyUnifiedDiff(S.M.files,S.diff));
+ try{
+  await saveRun({kind:'diff',label:label||'Change check',verdict:r.verdict,findings:snapshot.findings,diff:S.diff,files:snapshot.files});
+ }catch(err){toast(err.message)}
+}
+async function persistScan(label){
+ if(!S.projectId)S.projectId='my-project';
+ const files=fromSrc(S.src);
+ const problem=inspectFiles(files);
+ const errBox=$('#cerr');
+ if(problem.error){
+  const title=problem.error==='invalid_configuration'?'Invalid configuration':'Incomplete input';
+  if(errBox)errBox.innerHTML=`<div class="notice bad"><b>${title}</b><div>${esc(problem.message)}</div></div>`;
+  toast(problem.message);
+  return false;
+ }
+ if(errBox)errBox.innerHTML='';
+ scan();
+ try{
+  await saveRun({kind:'scan',label:label||'Project scan',findings:S.M.findings,files,verdict:S.M.findings.some(f=>SEV[f.sev]>=3)?'block':S.M.findings.length?'warn':'pass'});
+ }catch(err){toast(err.message)}
+ return true;
+}
+async function loadHistory(){
+ try{
+  S.history=await api('/api/runs?projectId='+encodeURIComponent(S.projectId));
+  S.compare=await api('/api/compare?projectId='+encodeURIComponent(S.projectId));
+ }catch(err){
+  S.history={runs:[]};
+  S.compare={enough:false,message:err.message};
+ }
+}
+
+async function scanDir(save){
+ const box=$('#cerr');
+ try{
+  const d=await api('/api/local/files?dir='+encodeURIComponent(S.dir));
+  S.src=toSrc(d.files);S.git=d.git;
+  if(!S.projectId)S.projectId=d.name;
+  keep();listenHistory();
+  if(save){toast(`Read ${d.count} files from ${d.name}${d.truncated?' (stopped at the size limit)':''}`);return await persistScan('Scan: '+d.name+(d.git?.branch?' @ '+d.git.branch:''))}
+  scan();return true;
+ }catch(err){
+  if(box)box.innerHTML=`<div class="notice bad"><b>Could not read the folder</b><div>${esc(err.message)}</div></div>`;
+  toast(err.message);return false;
+ }
+}
+
+let es,poll;
+function listenHistory(){
+ if(es){es.close();es=null}
+ if(poll){clearInterval(poll);poll=null}
+ S.live=false;
+ if(!S.health?.connected)return;
+ const url='/api/stream?projectId='+encodeURIComponent(S.projectId);
+ es=new EventSource(url);
+ es.onmessage=async()=>{S.live=true;await loadHistory();if((location.hash||'').slice(1)==='history')route()};
+ es.onerror=()=>{
+  S.live=false;
+  es.close();es=null;
+  if(!poll)poll=setInterval(async()=>{await loadHistory();if((location.hash||'').slice(1)==='history')route()},3000);
+ };
+}
+
+async function route(){
+ const t=(location.hash||'#code').slice(1),name=PAGES[t]?t:'code';
+ $('#nav').innerHTML=[['code','Code'],['findings','Findings'],['impact','Change impact'],['diff','Check a change'],['history','History']].map(([k,l])=>`<a href="#${k}" class="${k===name?'on':''}">${l}</a>`).join('');
+ if(name==='history')await loadHistory();
+ $('#v').innerHTML=PAGES[name]();
+ if(name==='diff')runDiff();
+ window.scrollTo(0,0);
+}
+
+
+document.addEventListener('click',async e=>{
+ const a=e.target.closest('[data-a]'),d=e.target.closest('[data-d]'),f=e.target.closest('[data-fn]');
+ if(a){
+  if(a.dataset.a==='scandir'){
+   S.dir=$('#dir').value.trim();S.projectId=$('#pid').value.trim();
+   const ok=await scanDir(true);
+   if(ok){location.hash='findings';route()}
+  }
+  else if(a.dataset.a==='gitdiff'||a.dataset.a==='gitlast'){
+   if(!S.dir){toast('Scan a project folder first (Code tab).');return}
+   try{
+    if(!await scanDir(false))return;
+    const d=await api('/api/local/diff?dir='+encodeURIComponent(S.dir)+'&mode='+(a.dataset.a==='gitlast'?'last':'work'));
+    S.diff=d.diff;$('#df').value=S.diff;runDiff();
+    if(!d.diff.trim())toast(d.message||'No changes found.');
+    else await persistDiff(a.dataset.a==='gitlast'?'Last commit':'Uncommitted changes');
+   }catch(err){toast(err.message)}
+  }
+  else if(a.dataset.a==='scan'){
+   S.src=$('#src').value;S.projectId=$('#pid')?.value.trim()||S.projectId;
+   keep();listenHistory();const ok=await persistScan();
+   if(ok){location.hash='findings';route()}
+  }
+  else if(a.dataset.a==='save-diff'||a.dataset.a==='dup-diff'){
+   await persistDiff('Change check');
+  }
+ }
+ else if(f){S.fn=f.dataset.fn;if(location.hash==='#impact'){e.preventDefault();route()}else location.hash='impact'}
+});
+document.addEventListener('change',async e=>{
+ if(e.target.id==='fs'){S.fn=e.target.value;route()}
+ if(e.target.id==='pid')S.projectId=e.target.value.trim()||S.projectId;
+ if(e.target.id==='fi'){
+  let s=$('#src').value.trim();
+  const skipped=[];
+  for(const f of e.target.files){
+   const name=f.webkitRelativePath||f.name;
+   if(/(^|\/)(node_modules|\.git|dist|build|venv|\.venv|__pycache__)\//.test(name))continue;
+   if(!readablePath(name)||f.size>400000){skipped.push(name);continue}
+   try{const t=await f.text();if(t.includes('\u0000')){skipped.push(name);continue}s+=(s?'\n\n':'')+'### '+name+'\n'+t.replace(/\n$/,'')}catch{skipped.push(name)}
+  }
+  S.src=s;$('#src').value=s;
+  if(skipped.length)$('#cerr').innerHTML=`<div class="notice bad"><b>Invalid configuration</b><div>Skipped files RippleGuard cannot read: ${esc(skipped.join(', '))}.</div></div>`;
+ }
+});
+document.addEventListener('input',e=>{
+ if(e.target.id==='df'){S.diff=e.target.value;runDiff()}
+ if(e.target.id==='pid')S.projectId=e.target.value.trim()||S.projectId;
+});
+$('#th').addEventListener('click',()=>{const r=document.documentElement,d=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.dataset.theme=d?'light':'dark'});
+window.addEventListener('hashchange',route);
+scan();
+refreshHealth().then(async()=>{listenHistory();if(S.dir)await scanDir(false);route()});
+route();
+</script>
+</body>
+</html>
